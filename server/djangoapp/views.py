@@ -9,8 +9,11 @@ from django.views.decorators.csrf import csrf_exempt
 
 from .models import CarMake, CarModel
 from .populate import initiate
-from .restapis import get_request
-
+from .restapis import (
+    get_request,
+    analyze_review_sentiments,
+    post_review,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -133,9 +136,12 @@ def get_cars(request):
     return JsonResponse({"CarModels": cars})
 
 
-def get_dealers(request):
+def get_dealers(request, state=None):
     try:
-        dealers = get_request("/fetchDealers")
+        if state and state.lower() != "all":
+            dealers = get_request(f"/fetchDealers/{state}")
+        else:
+            dealers = get_request("/fetchDealers")
 
         return JsonResponse({
             "status": 200,
@@ -144,8 +150,91 @@ def get_dealers(request):
 
     except Exception:
         logger.exception("Failed to fetch dealers")
-
         return JsonResponse({
             "status": 500,
             "error": "Failed to fetch dealers"
+        }, status=500)
+
+
+def get_dealer(request, dealer_id):
+    try:
+        dealers = get_request(f"/fetchDealer/{dealer_id}")
+
+        return JsonResponse({
+            "status": 200,
+            "dealer": dealers
+        })
+
+    except Exception:
+        logger.exception("Failed to fetch dealer")
+        return JsonResponse({
+            "status": 500,
+            "error": "Failed to fetch dealer"
+        }, status=500)
+
+
+def get_dealer_reviews(request, dealer_id):
+    try:
+        reviews = get_request(f"/fetchReviews/dealer/{dealer_id}")
+
+        return JsonResponse({
+            "status": 200,
+            "reviews": reviews
+        })
+
+    except Exception:
+        logger.exception("Failed to fetch dealer reviews")
+        return JsonResponse({
+            "status": 500,
+            "error": "Failed to fetch dealer reviews"
+        }, status=500)
+
+
+@csrf_exempt
+def add_review(request):
+    if request.method != "POST":
+        return JsonResponse(
+            {"status": 405, "error": "POST method required"},
+            status=405
+        )
+
+    try:
+        data = json.loads(request.body)
+
+        required = [
+            "name",
+            "dealership",
+            "review",
+            "purchase",
+            "purchase_date",
+            "car_make",
+            "car_model",
+            "car_year",
+        ]
+
+        if any(data.get(key) in (None, "") for key in required):
+            return JsonResponse({
+                "status": 400,
+                "error": "Missing required fields"
+            }, status=400)
+
+        data["sentiment"] = analyze_review_sentiments(data["review"])
+        saved_review = post_review(data)
+
+        return JsonResponse({
+            "status": 200,
+            "review": saved_review
+        })
+
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({
+            "status": 400,
+            "error": "Invalid JSON"
+        }, status=400)
+
+    except Exception:
+        logger.exception("Failed to add review")
+        return JsonResponse({
+            "status": 500,
+            "error": "Failed to add review"
         }, status=500)

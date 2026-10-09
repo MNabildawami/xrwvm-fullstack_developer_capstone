@@ -1,4 +1,3 @@
-
 import os
 import requests
 from dotenv import load_dotenv
@@ -7,26 +6,43 @@ load_dotenv()
 
 backend_url = os.getenv(
     'backend_url',
-    default="http://localhost:3030"
-)
+    'http://localhost:3030'
+).rstrip('/')
 
 sentiment_analyzer_url = os.getenv(
     'sentiment_analyzer_url',
-    default="http://localhost:5050/"
-)
+    'http://localhost:5000/'
+).rstrip('/')
 
 
 def get_request(endpoint, **kwargs):
-    """Send GET requests to the Express backend."""
-    request_url = backend_url + endpoint
-    response = requests.get(request_url, params=kwargs, timeout=10)
+    response = requests.get(
+        f"{backend_url}/{endpoint.lstrip('/')}",
+        params=kwargs,
+        timeout=10
+    )
+    response.raise_for_status()
     return response.json()
 
 
-# Will be implemented in the next step.
 def analyze_review_sentiments(text):
-    pass
+    try:
+        response = requests.get(
+            f"{sentiment_analyzer_url}/analyze/{requests.utils.quote(str(text), safe='')}",
+            timeout=10
+        )
+        response.raise_for_status()
+        result = response.json()
+        return result.get('sentiment', 'neutral')
+    except requests.RequestException:
+        return 'neutral'
 
 
 def post_review(data_dict):
-    pass
+    response = requests.post(
+        f"{backend_url}/insert_review",
+        json=data_dict,
+        timeout=10
+    )
+    response.raise_for_status()
+    return response.json()

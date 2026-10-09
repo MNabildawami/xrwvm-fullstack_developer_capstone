@@ -19,6 +19,11 @@ const reviews = new Schema({
     type: String,
     required: true
   },
+  sentiment: {
+    type: String,
+    enum: ['positive', 'negative', 'neutral'],
+    default: 'neutral'
+  },
   purchase: {
     type: Boolean,
     required: true

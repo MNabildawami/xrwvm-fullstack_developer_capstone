@@ -19,7 +19,7 @@ const dealerships_data = JSON.parse(
 );
 
 // Connect to MongoDB
-mongoose.connect('mongodb://mongo_db:27017/', {
+mongoose.connect('mongodb://mongo-db:27017/', {
   dbName: 'dealershipsDB'
 });
 
@@ -133,6 +133,7 @@ app.post(
         name: data.name,
         dealership: data.dealership,
         review: data.review,
+        sentiment: data.sentiment || 'neutral',
         purchase: data.purchase,
         purchase_date: data.purchase_date,
         car_make: data.car_make,

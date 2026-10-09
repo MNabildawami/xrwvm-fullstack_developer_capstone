@@ -15,6 +15,8 @@ from django.contrib.auth.models import User
 from django.views.decorators.csrf import csrf_exempt
 import json
 import logging
+from .models import CarMake, CarModel
+from .populate import initiate
 # from .populate import initiate
 
 
@@ -86,6 +88,23 @@ def registration(request):
         {"userName": user.username, "status": "Registered"},
         status=201
     )
+
+def get_cars(request):
+    from django.http import JsonResponse
+
+    if not CarMake.objects.exists() and not CarModel.objects.exists():
+        initiate()
+
+    car_models = CarModel.objects.select_related('car_make')
+    cars = []
+
+    for car_model in car_models:
+        cars.append({
+            "CarModel": car_model.name,
+            "CarMake": car_model.car_make.name,
+        })
+
+    return JsonResponse({"CarModels": cars})
 
 # Create a `logout_request` view to handle sign out request
 # def logout_request(request):

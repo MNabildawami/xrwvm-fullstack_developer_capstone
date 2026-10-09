@@ -7,12 +7,17 @@ from django.views.generic import TemplateView
 from django.conf.urls.static import static
 from django.conf import settings
 
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('djangoapp/', include('djangoapp.urls')),
 
     # Home page
     path('', TemplateView.as_view(template_name="Home.html"), name='home'),
+
+    # Login and registration pages
+    path('login/', TemplateView.as_view(template_name="index.html"), name='login_page'),
+    path('register/', TemplateView.as_view(template_name="index.html"), name='register_page'),
 
     # Static pages
     path(

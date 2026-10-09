@@ -9,10 +9,12 @@
 # from datetime import datetime
 
 from django.http import JsonResponse
-from django.contrib.auth import login, authenticate
-import logging
-import json
+from django.http import JsonResponse
+from django.contrib.auth import login, authenticate, logout
+from django.contrib.auth.models import User
 from django.views.decorators.csrf import csrf_exempt
+import json
+import logging
 # from .populate import initiate
 
 
@@ -37,6 +39,53 @@ def login_user(request):
         login(request, user)
         data = {"userName": username, "status": "Authenticated"}
     return JsonResponse(data)
+
+@csrf_exempt
+def logout_request(request):
+    logout(request)
+    return JsonResponse({"status": "Logged out"})
+
+
+@csrf_exempt
+def registration(request):
+    if request.method != "POST":
+        return JsonResponse(
+            {"error": "POST method required"},
+            status=405
+        )
+
+    data = json.loads(request.body)
+
+    username = data.get("userName")
+    password = data.get("password")
+    first_name = data.get("firstName", "")
+    last_name = data.get("lastName", "")
+    email = data.get("email", "")
+
+    if not username or not password:
+        return JsonResponse(
+            {"error": "Username and password are required"},
+            status=400
+        )
+
+    if User.objects.filter(username=username).exists():
+        return JsonResponse(
+            {"error": "Username already exists"},
+            status=400
+        )
+
+    user = User.objects.create_user(
+        username=username,
+        password=password,
+        first_name=first_name,
+        last_name=last_name,
+        email=email
+    )
+
+    return JsonResponse(
+        {"userName": user.username, "status": "Registered"},
+        status=201
+    )
 
 # Create a `logout_request` view to handle sign out request
 # def logout_request(request):
